@@ -20,21 +20,23 @@ const indexImg = newElement(
 
 const mask = newElement(
   "div",
-  "mask py-5 d-flex align-items-center justify-content-center overflow-auto",
+  "mask py-5 text-white d-flex flex-column align-items-center justify-content-center overflow-auto",
   "mask"
 );
 mask.style.backgroundColor = "rgba(0, 0, 0, 0.6)";
 
 const div1 = newElement("div", "d-flex justify-content-center m-5", "div1");
 
-const div2 = newElement("div", "text-white text-center m-md-3", "div2");
+const div2 = newElement("div", "text-center m-md-3", "div2");
 
 const h1 = newElement("h1", "display-1 fw-bold");
 h1.innerText = "Look for a Book";
 h1.style.fontFamily = "Calligraffitti";
 
-const h2 = newElement("h2", "fs-4 my-4");
-h2.innerText = "Powered by Open Library";
+const olLink = newElement("a", "fs-4 my-4", "olLink");
+olLink.href = "https://openlibrary.org/";
+olLink.innerText = "Powered by Open Library";
+olLink.style.cursor = "pointer";
 
 let inputBox = newElement(
   "div",
@@ -86,6 +88,9 @@ quote.innerText =
   "“Some books are to be tasted, others to be swallowed, and some few to be chewed and digested.” - Francesco Bacone";
 quote.style.fontFamily = "Calligraffitti";
 
+const copiright = newElement("p", "text-center fs-6 position-absolute bottom-0", "copyright");
+copiright.innerText = "© 2023 Giorgio Messore";
+
 const galleryContainer = newElement(
   "div",
   "container-fluid",
@@ -123,8 +128,9 @@ div.appendChild(mask);
 mask.appendChild(div1);
 div1.appendChild(div2);
 div2.appendChild(h1);
-div2.appendChild(h2);
+div2.appendChild(olLink);
 div2.appendChild(inputBox);
+mask.appendChild(copiright)
 inputBox.appendChild(dropdownButton);
 inputBox.appendChild(dropdownMenu);
 inputBox.appendChild(inputText);
@@ -262,7 +268,6 @@ function cleanGallery() {
     document.body.removeChild(moreBooks);
   }
   gallery.innerHTML = "";
-  widget.style.visibility = "hidden";
   j = 0;
 }
 
@@ -468,7 +473,7 @@ async function loadGallery(searchSubject, offset) {
   document.body.removeChild(overlay);
   document.body.classList.remove("overlayActive");
 
-  widget.style.visibility = "visible";
+widget.style.visibility = "visible";
 
   if (
     !document.querySelector("#moreBooks") &&
@@ -516,4 +521,10 @@ searchButton.addEventListener("click", () => {
   search();
 });
 
-
+window.addEventListener("scroll", function() {
+  if (window.scrollY === 0) {
+    widget.classList.add("hidden");
+  } else {
+    widget.classList.remove("hidden");
+  }
+});
