@@ -2,6 +2,9 @@
 import "../css/style.css";
 import indexImage from "../img/indexImg.jpg";
 import "material-icons";
+
+console.log(process.env.MAIN_URL)
+
 let searchType = "subject";
 let offset = 0;
 let j = 0;
@@ -34,7 +37,7 @@ h1.innerText = "Look for a Book";
 h1.style.fontFamily = "Calligraffitti";
 
 const olLink = newElement("a", "fs-4 my-4", "olLink");
-olLink.href = "https://openlibrary.org/";
+olLink.href = `${process.env.MAIN_URL}`;
 olLink.innerText = "Powered by Open Library";
 olLink.style.cursor = "pointer";
 
@@ -169,7 +172,7 @@ function addOverlay() {
     "fixed-top h-100 d-flex flex-wrap justify-content-center align-items-center overflow-auto",
     "overlay"
   );
-  overlay.style.backgroundColor = "rgba(0,0,0,0.6)";
+  overlay.style.backgroundColor = "rgba(0,0,0,0.8)";
   overlay.style.backdropFilter = "blur(3px)";
   overlay.setAttribute("z-index", "3");
   document.body.appendChild(overlay);
@@ -227,17 +230,17 @@ async function getData(url, responseType) {
 async function getBookData(searchSubject, offset) {
   if (searchType == "subject") {
    return getData(
-      `https://openlibrary.org/subjects/${searchSubject}.json?limit=12&offset=${offset}`,"json"
+      `${process.env.MAIN_URL}/subjects/${searchSubject}.json?limit=12&offset=${offset}`,"json"
     );
   } else {
    return getData(
-      `https://openlibrary.org/search.json?title=${searchSubject}&limit=12&offset=${offset}`,"json"
+      `${process.env.MAIN_URL}/search.json?title=${searchSubject}&limit=12&offset=${offset}`,"json"
     );
   }
 }
 
 function getDescription(id) {
-  return getData(`https://openlibrary.org${id}.json`, "json")
+  return getData(`${process.env.MAIN_URL}${id}.json`, "json")
 }
 
 function showDescription(id) {
@@ -361,7 +364,7 @@ async function loadBooksData(data, dataCounter, dataSrc) {
 
 async function loadCover(book) {
   return new Promise((resolve, reject) => {
-    getData(`https://covers.openlibrary.org/b/id/${book.cover}-M.jpg`, "blob")
+    getData(`${process.env.COVERS_URL}/${book.cover}-M.jpg`, "blob")
       .then(data => {
         let url = URL.createObjectURL(data);
         let cardImg = newElement(
