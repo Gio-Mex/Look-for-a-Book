@@ -164,15 +164,13 @@ function newElement(tagName, className, id, type, src, alt) {
   return element;
 }
 
-
-
 function addOverlay() {
   const overlay = newElement(
     "div",
     "fixed-top h-100 d-flex flex-wrap justify-content-center align-items-center overflow-auto",
     "overlay"
   );
-  overlay.style.backgroundColor = "rgba(0,0,0,0.8)";
+  overlay.style.backgroundColor = "rgba(0,0,0,0.9)";
   overlay.style.backdropFilter = "blur(3px)";
   overlay.setAttribute("z-index", "3");
   document.body.appendChild(overlay);
@@ -382,7 +380,6 @@ async function loadCover(book) {
       });
   });
 }
-
 
 async function newCard(book) {
   let card = newElement(
