@@ -2,8 +2,8 @@
 import "../css/style.css";
 import indexImage from "../img/indexImg.jpg";
 import "material-icons";
-
-console.log(process.env.MAIN_URL)
+import axios from "axios";
+axios.defaults.baseURL = process.env.MAIN_URL;
 
 let searchType = "subject";
 let offset = 0;
@@ -18,7 +18,7 @@ const indexImg = newElement(
   "homeImg",
   "",
   indexImage,
-  "A pile of books"
+  "An open book"
 );
 
 const mask = newElement(
@@ -91,7 +91,11 @@ quote.innerText =
   "“Some books are to be tasted, others to be swallowed, and some few to be chewed and digested.” - Francesco Bacone";
 quote.style.fontFamily = "Calligraffitti";
 
-const copiright = newElement("p", "text-center fs-6 position-absolute bottom-0", "copyright");
+const copiright = newElement(
+  "p",
+  "text-center fs-6 position-absolute bottom-0",
+  "copyright"
+);
 copiright.innerText = "© 2023 Giorgio Messore";
 
 const galleryContainer = newElement(
@@ -133,7 +137,7 @@ div1.appendChild(div2);
 div2.appendChild(h1);
 div2.appendChild(olLink);
 div2.appendChild(inputBox);
-mask.appendChild(copiright)
+mask.appendChild(copiright);
 inputBox.appendChild(dropdownButton);
 inputBox.appendChild(dropdownMenu);
 inputBox.appendChild(inputText);
@@ -148,6 +152,8 @@ document.body.appendChild(widget);
 widget.appendChild(widgetIcon);
 
 // Functions definition
+
+// New element adding function
 function newElement(tagName, className, id, type, src, alt) {
   let element = document.createElement(tagName);
   element.id = id;
@@ -164,6 +170,7 @@ function newElement(tagName, className, id, type, src, alt) {
   return element;
 }
 
+// Overlay adding function
 function addOverlay() {
   const overlay = newElement(
     "div",
@@ -177,6 +184,7 @@ function addOverlay() {
   document.body.classList.add("overlayActive");
 }
 
+// Search function
 function search() {
   const searchSubject = inputText.value.toLowerCase();
   if (!searchSubject) {
@@ -186,6 +194,7 @@ function search() {
   loadGallery(searchSubject, offset);
 }
 
+// Loading function
 function loading() {
   addOverlay();
   const spinnerContainer = newElement(
@@ -205,56 +214,64 @@ function loading() {
   spinnerContainer.appendChild(span);
 }
 
-async function getData(url, responseType) {
+// Get data function
+async function getData(searchSubject, searchType, offset, book, id) {
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Fetching data error ${response.status}`);
+    let response;
+    switch (searchType) {
+      case "subject": {
+        searchSubject = searchSubject.replace(/ /g, "");
+        response = await axios.get(`/subjects/${searchSubject}.json`, {
+          params: {
+            limit: 12,
+            offset: offset,
+          },
+        });
+        break;
+      }
+      case "title": {
+        response = await axios.get("/search.json", {
+          params: {
+            title: searchSubject,
+            limit: 12,
+            offset: offset,
+          },
+        });
+        break;
+      }
+      case "blob": {
+        response = await axios.get(`/${book.cover}-M.jpg`, {
+          baseURL: process.env.COVERS_URL,
+          responseType: "blob",
+        });
+        break;
+      }
+      case "description": {
+        response = await axios.get(`${id}.json`);
+        break;
+      }
     }
-    let data;
-    if (responseType == "json") {
-      data = await response.json();
-    } else if (responseType == "blob") {
-      data = await response.blob();
-    } else {
-      throw new Error(`Invalid responseType: ${responseType}`);
-    }
-    return data;
+    return response.data;
   } catch (error) {
+    console.log(error);
     throw error;
   }
 }
 
-async function getBookData(searchSubject, offset) {
-  if (searchType == "subject") {
-   return getData(
-      `${process.env.MAIN_URL}/subjects/${searchSubject}.json?limit=12&offset=${offset}`,"json"
-    );
-  } else {
-   return getData(
-      `${process.env.MAIN_URL}/search.json?title=${searchSubject}&limit=12&offset=${offset}`,"json"
-    );
+// Show book description function
+async function showDescription(id) {
+  const data = await getData("", "description", "", "", id);
+  const title = data.title;
+  let description = data.description;
+  if (!description) {
+    description = "Sorry, no description available.";
+  } else if (typeof description === "object") {
+    description = description.value;
   }
+  modal(title, description);
 }
 
-function getDescription(id) {
-  return getData(`${process.env.MAIN_URL}${id}.json`, "json")
-}
-
-function showDescription(id) {
-  getDescription(id)
-    .then((data) => {
-      const title = data.title;
-      let description = data.description;
-      if (!description) {
-        description = "Sorry, no description available.";
-      } else {
-        if (typeof description === "object") description = description.value;
-      }
-      modal(title, description);
-    })
-}
-
+// Books addition function
 function addBooks(offset) {
   const moreBooks = document.querySelector("#moreBooks");
   moreBooks.addEventListener("click", () => {
@@ -264,14 +281,16 @@ function addBooks(offset) {
   });
 }
 
+// Gallery cleaning  function
 function cleanGallery() {
   if (document.querySelector("#moreBooks")) {
-    document.body.removeChild(moreBooks);
+    moreBooks.remove();
   }
   gallery.innerHTML = "";
   j = 0;
 }
 
+// Scroll down function
 function scrollDown() {
   window.scrollBy({
     top: (window.innerHeight / 100) * 90,
@@ -279,6 +298,7 @@ function scrollDown() {
   });
 }
 
+// Modal creation and closing functions
 function modal(title, text) {
   addOverlay();
 
@@ -324,6 +344,7 @@ function modal(title, text) {
   }
 }
 
+// Dropdown menu function
 function clickItem(event) {
   dropdownMenu.style.display = "none";
   inputText.placeholder = "Search by " + event.target.textContent;
@@ -331,6 +352,7 @@ function clickItem(event) {
   dropdownButton.textContent = event.target.textContent + " ";
 }
 
+// Books data loading function
 async function loadBooksData(data, dataCounter, dataSrc) {
   counter.innerText = `${dataCounter || "No"} works found`;
   try {
@@ -342,15 +364,20 @@ async function loadBooksData(data, dataCounter, dataSrc) {
       dataAuthors = dataSrc[i].authors;
       book = {
         id: dataSrc[i].key,
-        title: dataSrc[i].title,  
-      }
+        title: dataSrc[i].title,
+      };
+
       if (dataSrc == data.works) {
-          book.authors = dataAuthors.map((authors) => authors.name).join(", ");
-          book.cover = dataSrc[i].cover_id;
-        } else {
-          book.authors = data.docs[i].author_name?.join(", ") ?? "No author available",
-          book.cover = dataSrc[i].cover_i;
-        }
+        book.authors =
+          dataAuthors.map((authors) => authors.name).join(", ") ??
+          "No author available";
+        book.cover = dataSrc[i].cover_id;
+      } else {
+        (book.authors =
+          data.docs[i].author_name?.join(", ") ?? "No author available"),
+          (book.cover = dataSrc[i].cover_i);
+      }
+
       j++;
       cards.push(newCard(book, j));
     }
@@ -360,27 +387,26 @@ async function loadBooksData(data, dataCounter, dataSrc) {
   }
 }
 
+// Book cover loading function
 async function loadCover(book) {
-  return new Promise((resolve, reject) => {
-    getData(`${process.env.COVERS_URL}/${book.cover}-M.jpg`, "blob")
-      .then(data => {
-        let url = URL.createObjectURL(data);
-        let cardImg = newElement(
-          "img",
-          "overflow-hidden shadow-3-strong",
-          "cardCover",
-          "",
-          url,
-          "Book cover"
-        );
-        resolve(cardImg);
-      })
-      .catch(error => {
-        reject(error);
-      });
-  });
+  try {
+    const data = await getData("", "blob", "", book);
+    const url = URL.createObjectURL(data);
+    const cardImg = newElement(
+      "img",
+      "overflow-hidden shadow-3-strong",
+      "cardCover",
+      "",
+      url,
+      "Book cover"
+    );
+    return cardImg;
+  } catch (error) {
+    throw error;
+  }
 }
 
+// Card creation function
 async function newCard(book) {
   let card = newElement(
     "div",
@@ -423,14 +449,13 @@ async function newCard(book) {
   );
   cardRow.appendChild(cardCol1);
 
-if (book.cover == undefined || null) {
-  cardCol1.style.color = "#d7ccc8";
-  cardCol1.innerText = "No cover available";
-} else {
-  await loadCover(book)
-  .then (cardImg => {
-    cardCol1.appendChild(cardImg);
-  })
+  if (book.cover == undefined || null) {
+    cardCol1.style.color = "#d7ccc8";
+    cardCol1.innerText = "No cover available";
+  } else {
+    await loadCover(book).then((cardImg) => {
+      cardCol1.appendChild(cardImg);
+    });
   }
 
   let descriptionButton = newElement(
@@ -447,49 +472,49 @@ if (book.cover == undefined || null) {
   });
   gallery.appendChild(card);
 }
+
+// Gallery loading function with cards created
 async function loadGallery(searchSubject, offset) {
   loading();
-  const data = await getBookData(searchSubject, offset);
+  const data = await getData(searchSubject, searchType, offset);
   let cards = [];
-    try {  
-  if (searchType === "subject") {
-    cards = await loadBooksData(data, data.work_count, data.works);
-      }
-  else {
-    cards = await loadBooksData(data, data.numFound, data.docs);
+  try {
+    if (searchType === "subject") {
+      cards = await loadBooksData(data, data.work_count, data.works);
+    } else if (searchType === "title") {
+      cards = await loadBooksData(data, data.numFound, data.docs);
     }
   } catch (error) {
-      console.log(error);
+    console.log(error);
   }
-  
-  Promise.allSettled(cards)
-  .then(() => {
-      galleryContainer.prepend(counter);
 
-  galleryContainer.appendChild(gallery);
+  Promise.allSettled(cards).then(() => {
+    galleryContainer.prepend(counter);
 
-  scrollDown();
+    galleryContainer.appendChild(gallery);
 
-  document.body.removeChild(overlay);
-  document.body.classList.remove("overlayActive");
+    scrollDown();
 
-widget.style.visibility = "visible";
+    document.body.removeChild(overlay);
+    document.body.classList.remove("overlayActive");
 
-  if (
-    !document.querySelector("#moreBooks") &&
-    (data.work_count || data.numFound > 0)
-  ) {
-    let moreBooks = newElement(
-      "p",
-      "text-center bottom-0 fs-5 my-4 cursor-pointer ",
-      "moreBooks"
-    );
-    moreBooks.innerText = "More books...";
-    moreBooks.style.cursor = "pointer";
-    document.body.appendChild(moreBooks);
-    addBooks(offset);
-  }
-  })
+    widget.style.visibility = "visible";
+
+    if (
+      !document.querySelector("#moreBooks") &&
+      (data.work_count || data.numFound > 0)
+    ) {
+      let moreBooks = newElement(
+        "p",
+        "text-center bottom-0 fs-5 my-4 cursor-pointer ",
+        "moreBooks"
+      );
+      moreBooks.innerText = "More books...";
+      moreBooks.style.cursor = "pointer";
+      document.body.appendChild(moreBooks);
+      addBooks(offset);
+    }
+  });
 }
 
 // Events
@@ -521,7 +546,7 @@ searchButton.addEventListener("click", () => {
   search();
 });
 
-window.addEventListener("scroll", function() {
+window.addEventListener("scroll", function () {
   if (window.scrollY === 0) {
     widget.classList.add("hidden");
   } else {
