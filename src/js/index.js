@@ -3,6 +3,8 @@ import "../css/style.css";
 import indexImage from "../img/indexImg.jpg";
 import "material-icons";
 import axios from "axios";
+import _ from "lodash";
+
 axios.defaults.baseURL = process.env.MAIN_URL;
 
 let searchType = "subject";
@@ -40,6 +42,7 @@ const olLink = newElement("a", "fs-4 my-4", "olLink");
 olLink.href = `${process.env.MAIN_URL}`;
 olLink.innerText = "Powered by Open Library";
 olLink.style.cursor = "pointer";
+olLink.target = "blank";
 
 let inputBox = newElement(
   "div",
@@ -353,31 +356,29 @@ function clickItem(event) {
 }
 
 // Books data loading function
-async function loadBooksData(data, dataCounter, dataSrc) {
-  counter.innerText = `${dataCounter || "No"} works found`;
+async function loadBooksData(data) {
+  counter.innerText = _.has(data, "work_count")
+    ? `${_.get(data, "work_count")} works found`
+    : `${_.get(data, "numFound")} works found`;
   try {
-    let books = dataSrc;
+    let works = _.get(data, "works") || _.get(data, "docs");
     const cards = [];
-    let dataAuthors = [];
     let book = {};
-    for (let i = 0; i < books.length; i++) {
-      dataAuthors = dataSrc[i].authors;
+    for (let i = 0; i < works.length; i++) {
+      let work = works[i];
+      let workAuthors = _.get(work, "authors") || _.get(work, "author_name");
       book = {
-        id: dataSrc[i].key,
-        title: dataSrc[i].title,
+        id: _.get(work, "key"),
+        title: _.get(work, "title"),
+        authors:
+          workAuthors == work.authors
+            ? _.map(workAuthors, "name").join(", ")
+            : _.map(workAuthors).join(", "),
+        cover: _.get(work, "cover_id") || _.get(work, "cover_i"),
       };
-
-      if (dataSrc == data.works) {
-        book.authors =
-          dataAuthors.map((authors) => authors.name).join(", ") ??
-          "No author available";
-        book.cover = dataSrc[i].cover_id;
-      } else {
-        (book.authors =
-          data.docs[i].author_name?.join(", ") ?? "No author available"),
-          (book.cover = dataSrc[i].cover_i);
+      if (works == data.docs) {
+        book.authors = _.map(workAuthors).join(", ");
       }
-
       j++;
       cards.push(newCard(book, j));
     }
@@ -473,20 +474,12 @@ async function newCard(book) {
   gallery.appendChild(card);
 }
 
-// Gallery loading function with cards created
+// Gallery loading function (with cards created)
 async function loadGallery(searchSubject, offset) {
   loading();
   const data = await getData(searchSubject, searchType, offset);
   let cards = [];
-  try {
-    if (searchType === "subject") {
-      cards = await loadBooksData(data, data.work_count, data.works);
-    } else if (searchType === "title") {
-      cards = await loadBooksData(data, data.numFound, data.docs);
-    }
-  } catch (error) {
-    console.log(error);
-  }
+  cards = await loadBooksData(data);
 
   Promise.allSettled(cards).then(() => {
     galleryContainer.prepend(counter);
