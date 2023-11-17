@@ -242,7 +242,7 @@ async function getData(searchSubject, searchType, offset, book, id) {
         });
         break;
       }
-      case "blob": {
+      case "cover": {
         response = await axios.get(`/${book.cover}-M.jpg`, {
           baseURL: process.env.COVERS_URL,
           responseType: "blob",
@@ -391,7 +391,7 @@ async function loadBooksData(data) {
 // Book cover loading function
 async function loadCover(book) {
   try {
-    const data = await getData("", "blob", "", book);
+    const data = await getData("", "cover", "", book);
     const url = URL.createObjectURL(data);
     const cardImg = newElement(
       "img",
